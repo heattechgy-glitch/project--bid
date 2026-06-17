@@ -1,36 +1,41 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Create notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    property_id INTEGER,
+    bid_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-CREATE TABLE IF NOT EXISTS properties (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    address text,
-    city text,
-    state text,
-    zip text,
-    lat numeric,
-    lng numeric,
-    property_type text,
-    listing_type text,
-    status text,
-    starting_price numeric,
-    current_bid numeric,
-    reserve_price numeric,
-    lowest_rent_bid numeric,
-    asking_price numeric,
-    monthly_rate numeric,
-    auction_end_date timestamptz,
-    bedrooms int,
-    bathrooms numeric,
-    sq_ft int,
-    lot_size int,
-    year_built int,
-    description text,
-    images jsonb,
-    virtual_tour_url text,
-    open_house_dates jsonb,
-    escrow_company_id uuid,
-    mls_number text,
-    is_multi_parcel boolean,
-    parcels jsonb,
-    created_at timestamptz DEFAULT now(),
-    updated_at timestamptz DEFAULT now()
+-- Create showings table
+CREATE TABLE IF NOT EXISTS showings (
+    id SERIAL PRIMARY KEY,
+    property_id INTEGER NOT NULL,
+    buyer_id INTEGER NOT NULL,
+    buyer_name VARCHAR(100) NOT NULL,
+    buyer_email VARCHAR(100) NOT NULL,
+    seller_email VARCHAR(100) NOT NULL,
+    requested_date DATE NOT NULL,
+    requested_time TIME NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    counter_date DATE,
+    counter_time TIME,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create escrow_companies table
+CREATE TABLE IF NOT EXISTS escrow_companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    website VARCHAR(255),
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    states_available JSONB NOT NULL,
+    payment_link VARCHAR(255),
+    instructions TEXT,
+    logo_url VARCHAR(255)
 );

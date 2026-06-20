@@ -1,126 +1,58 @@
-import { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
-import CreateListing from './pages/CreateListing.jsx';
-import PropertyDetail from './pages/PropertyDetail.jsx';
-import Notifications from './pages/Notifications.jsx';
-import Properties from './pages/Properties.jsx';
-import Home from './pages/Home.jsx';
-import BuyerDashboard from './pages/BuyerDashboard.jsx';
-import SellerDashboard from './pages/SellerDashboard.jsx';
-import AdminDashboard from './pages/AdminDashboard.jsx';
-import Navbar from './components/Navbar.jsx';
-
-function ProtectedRoute({ children, requireRole }) {
-  const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const location = useLocation();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          setLoading(false);
-          return;
-        }
-
-        setUser(session.user);
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-
-        setUserRole(profile?.role || 'buyer');
-      } catch (error) {
-        console.error('Auth check error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUser(session.user);
-        supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => setUserRole(data?.role || 'buyer'));
-      } else {
-        setUser(null);
-        setUserRole(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-sky-500 text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
-
-  if (requireRole && requireRole !== userRole) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
+import CreateProject from './pages/CreateProject';
+import Bids from './pages/Bids';
+import BidDetail from './pages/BidDetail';
+import CreateBid from './pages/CreateBid';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-900">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/properties" element={<Properties />} />
-        <Route path="/properties/:id" element={<PropertyDetail />} />
-        <Route path="/buyer" element={<BuyerDashboard />} />
-        <Route path="/notifications" element={<Notifications />} />
-        
-        <Route 
-          path="/create-listing" 
-          element={
-            <ProtectedRoute requireRole="seller">
-              <CreateListing />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/seller" 
-          element={
-            <ProtectedRoute requireRole="seller">
-              <SellerDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute requireRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-      </Routes>
-    </div>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Protected Routes */}
+          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            
+            {/* Projects Routes */}
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/new" element={<CreateProject />} />
+            <Route path="projects/:id" element={<ProjectDetail />} />
+            <Route path="projects/:id/edit" element={<CreateProject />} />
+            
+            {/* Bids Routes */}
+            <Route path="bids" element={<Bids />} />
+            <Route path="bids/new" element={<CreateBid />} />
+            <Route path="bids/:id" element={<BidDetail />} />
+            <Route path="bids/:id/edit" element={<CreateBid />} />
+            <Route path="projects/:projectId/bids/new" element={<CreateBid />} />
+            
+            {/* User Routes */}
+            <Route path="profile" element={<Profile />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+          
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
